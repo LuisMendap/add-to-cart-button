@@ -1,5 +1,5 @@
 {
-  "vendor": "vtex",
+  "vendor": "tafmx",
   "name": "add-to-cart-button",
   "version": "0.28.0",
   "title": "Add to Cart Button",
@@ -19,7 +19,8 @@
     "vtex.product-context": "0.x",
     "vtex.pixel-manager": "1.x",
     "vtex.store-resources": "0.x",
-    "vtex.native-types": "0.x"
+    "vtex.native-types": "0.x",
+    "vtex.format-currency": "0.x"
   },
   "registries": [
     "smartcheckout"

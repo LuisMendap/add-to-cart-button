@@ -25,6 +25,7 @@ interface Props {
   skuItems?: CartItem[]
   customPixelEventId?: string
   addToCartFeedback?: 'toast' | 'customEvent'
+  timeToCloseTheModal?: number
 }
 
 function checkAvailability(
@@ -92,6 +93,7 @@ const Wrapper = withToast(function Wrapper(props: Props) {
     text,
     customPixelEventId,
     addToCartFeedback = 'toast',
+    timeToCloseTheModal,
     onClickBehavior = 'add-to-cart',
     onClickEventPropagation = 'disabled',
   } = props
@@ -142,6 +144,8 @@ const Wrapper = withToast(function Wrapper(props: Props) {
     productId: product?.productId,
   }
 
+  const productClusters = product?.productClusters
+
   return (
     <AddToCartButton
       text={text}
@@ -156,11 +160,13 @@ const Wrapper = withToast(function Wrapper(props: Props) {
       customOneClickBuyLink={customOneClickBuyLink}
       allSkuVariationsSelected={areAllSkuVariationsSelected}
       productLink={productLink}
+      productClusters={productClusters}
       onClickBehavior={onClickBehavior}
       onClickEventPropagation={onClickEventPropagation}
       multipleAvailableSKUs={multipleAvailableSKUs}
       customPixelEventId={customPixelEventId}
       addToCartFeedback={addToCartFeedback}
+      timeToCloseTheModal={timeToCloseTheModal}
     />
   )
 })

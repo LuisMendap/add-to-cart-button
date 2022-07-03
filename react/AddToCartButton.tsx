@@ -16,12 +16,22 @@ import { useOrderItems } from 'vtex.order-items/OrderItems'
 
 import { CartItem } from './modules/catalogItemToCart'
 import useMarketingSessionParams from './hooks/useMarketingSessionParams'
+import AddToCartModal from './components/AddToCartModal'
 
-interface ProductLink {
+
+// Yeezy & limited
+import { useOrderForm } from 'vtex.order-manager/OrderForm'
+import { yeezyClusterId, limitedClusterId } from './config'
+import { getClustersFromProduct } from './services/getClustersFromProduct'
+
+export interface ProductLink {
   linkText?: string
   productId?: string
 }
-
+export interface ProductCluster {
+  id: string,
+  name: string
+}
 interface Props {
   isOneClickBuy: boolean
   available: boolean
@@ -35,11 +45,13 @@ interface Props {
   text?: string
   unavailableText?: string
   productLink: ProductLink
+  productClusters?: ProductCluster[]
   onClickBehavior: 'add-to-cart' | 'go-to-product-page' | 'ensure-sku-selection'
   customPixelEventId?: string
-  addToCartFeedback?: 'customEvent' | 'toast'
+  addToCartFeedback?: 'customEvent' | 'toast' | 'modal'
   onClickEventPropagation: 'disabled' | 'enabled'
   isLoading?: boolean
+  timeToCloseTheModal?: number
 }
 
 // We apply a fake loading to accidental consecutive clicks on the button
@@ -117,12 +129,14 @@ function AddToCartButton(props: Props) {
     customOneClickBuyLink,
     allSkuVariationsSelected = true,
     productLink,
+    productClusters,
     onClickBehavior,
     multipleAvailableSKUs,
     customPixelEventId,
     addToCartFeedback,
+    timeToCloseTheModal,
     onClickEventPropagation = 'disabled',
-    isLoading,
+    isLoading
   } = props
 
   const intl = useIntl()
@@ -138,6 +152,17 @@ function AddToCartButton(props: Props) {
   const [isFakeLoading, setFakeLoading] = useState(false)
   const translateMessage = (message: MessageDescriptor) =>
     intl.formatMessage(message)
+
+  // Modal
+  const [showModal, setShowModal] = useState(false)
+
+  // Yeezy & limited
+  const orderForm = useOrderForm()
+  const items = orderForm?.orderForm?.items || []
+
+  const [dontAllowYeezy, setDontAllowYeezy] = useState(false)
+  const [yeezyInCart, setIsYeezyInCart] = useState(false)
+  const [currentlyInLimitedProduct, setIsCurrentlyInLimitedProduct] = useState(false)
 
   // collect toast and fake loading delay timers
   const timers = useRef<Record<string, number | undefined>>({})
@@ -236,9 +261,20 @@ function AddToCartButton(props: Props) {
     }
 
     addToCartFeedback === 'toast' &&
-      (timers.current.toast = window.setTimeout(() => {
-        toastMessage({ success: true })
-      }, FAKE_LOADING_DURATION))
+    (timers.current.toast = window.setTimeout(() => {
+      toastMessage({ success: true })
+    }, FAKE_LOADING_DURATION))
+
+    if (addToCartFeedback === 'modal') {
+      setShowModal(true)
+
+
+      if(timeToCloseTheModal){
+        setTimeout(() => {
+          setShowModal(false)
+        }, timeToCloseTheModal)
+      }
+    }
 
     /* PWA */
     if (promptOnCustomEvent === 'addToCart' && showInstallPrompt) {
@@ -260,7 +296,53 @@ function AddToCartButton(props: Props) {
     }
 
     if (allSkuVariationsSelected) {
-      handleAddToCart()
+      if(items.length){
+         // If there are any product in the cart and is trying to add a Yeezy
+         if (productClusters?.some((clusters:any) => clusters.id === yeezyClusterId)){
+          setDontAllowYeezy(true)
+         }
+         else{
+           // If there is a Yeezy in the cart
+           let thereIsAYeezy=false
+           const checkThereIsAYeezy = Promise.all(
+             items.map(async(item:any) => {
+               const clusters = await getClustersFromProduct(item.productId)
+               if (Object.keys(clusters).includes(yeezyClusterId)){
+                 thereIsAYeezy=true
+               }
+             })
+           )
+           checkThereIsAYeezy.then(()=>{
+             if(thereIsAYeezy){
+               setIsYeezyInCart(true)
+             }
+             // If the product is a limited product
+             else{
+               let productIsInCart = items.some((item:any) => item.productId.toString() === productLink.productId)
+               if (productIsInCart){
+                 const clusters = Promise.resolve(getClustersFromProduct(productLink.productId || ''));
+                 let allowHandleAddToCart = true;
+
+                 clusters.then((clusters:any) => {
+                   if (Object.keys(clusters).includes(limitedClusterId)){
+                     setIsCurrentlyInLimitedProduct(true)
+                     allowHandleAddToCart=false
+                   }
+                   if(allowHandleAddToCart){
+                     handleAddToCart()
+                   }
+                 })
+               }
+               else{
+                 handleAddToCart()
+               }
+             }
+           })
+         }
+      }
+      else{
+        handleAddToCart()
+      }
     }
   }
 
@@ -294,6 +376,9 @@ function AddToCartButton(props: Props) {
   )
 
   const ButtonWithLabel = (
+    dontAllowYeezy ? <div>No puedes agregar un Yeezy si tienes otros productos en tu carrito</div> :
+    yeezyInCart ? <div>No puedes agregar este producto. Tienes un Yeezy en tu carrito</div> :
+    currentlyInLimitedProduct ? <div>No puedes agregar más unidades de este producto</div> :
     <Button
       block
       isLoading={isFakeLoading || isLoading}
@@ -305,7 +390,17 @@ function AddToCartButton(props: Props) {
   )
 
   return allSkuVariationsSelected ? (
-    ButtonWithLabel
+    <div>
+      {ButtonWithLabel}
+      {showModal ? (
+        <AddToCartModal
+          showModal={showModal}
+          setShowModal={setShowModal}
+          skuItems={skuItems}
+          productClusters={productClusters}
+        />
+      ) : null}
+    </div>
   ) : (
     <Tooltip trigger="click" label={tooltipLabel}>
       {ButtonWithLabel}

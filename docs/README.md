@@ -47,6 +47,7 @@ The `add-to-cart-button` is a block responsible for adding products in the [Mini
 | `text` | `string` | Defines a custom text message to be displayed on the Add To Cart Button. | `Add to cart` *( automatic translation will be applied according to your store's default language)* | 
 | `unavailableText` | `string` | Defines a custom text message to be displayed on the Add To Cart Button when a product is unavailable. | `Unavailable` *(automatic translation will be applied according to your store's default language)* |
 | `customPixelEventId` | `string` | Define the `id` for the event that will be sent by the the button upon user interaction. | `undefined`   |
+| `addToCartFeedback` | `toast`&#124;`customEvent`&#124;`modal` | Define the action to be executed when adding to cart | `toast`   |
 
 ## Customization
 
@@ -57,6 +58,19 @@ In order to apply CSS customizations in this and other blocks, follow the instru
 | `buttonText`          |
 | `buttonDataContainer` |
 | `tooltipLabelText`    |
+| `Modal` |
+| `ModalProductInfo` |
+| `ModalHeader` |
+| `ModalHeaderTitle` |
+| `ModalCartText` |
+| `ModalProductImage` |
+| `ModalProductName` |
+| `ModalProductDetails` |
+| `ModalFooter` |
+| `ModalCartInfo` |
+| `ModalTotal` |
+| `ModalContinueButton` |
+| `ModalViewCart` |
 
 <!-- DOCS-IGNORE:start -->
 
